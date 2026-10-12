@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intern Zyntelligent Cafe Music Queue</title>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>☕ Intern Zyntelligent Cafe Music Queue</h1>
+        
+        <!-- Login Section -->
+        <div id="loginSection" class="card" style="text-align: center; max-width: 400px; margin: 4rem auto;">
+            <h2 style="border: none;">Welcome to the Cafe!</h2>
+            <p class="text-sm mb-2">Enter your name to request a song.</p>
+            <input type="text" id="nameInput" placeholder="Your Name" style="margin-bottom: 1rem;">
+            <button id="loginBtn" style="width: 100%;">Join Queue</button>
+            <p id="loginError" class="text-sm mt-2" style="color: var(--danger);"></p>
+        </div>
+
+        <!-- Main App Section -->
+        <div id="mainSection" class="hidden">
+            <div class="card flex justify-between items-center">
+                <div>
+                    Welcome, <strong id="userNameDisplay"></strong>!
+                </div>
+                <button id="logoutBtn" class="danger">Logout</button>
+            </div>
+
+            <!-- Now Playing -->
+            <div class="card">
+                <h2>Now Playing</h2>
+                <div id="nowPlayingContainer">
+                    <p class="text-sm">Nothing is playing right now.</p>
+                </div>
+            </div>
+
+            <!-- Request Limits & Online Users -->
+            <div class="card flex justify-between items-center">
+                <h3>My Active Requests: <span id="requestLimitDisplay">0 / 10</span></h3>
+                <div class="text-sm">🟢 Online: <span id="onlineCountDisplay">0</span></div>
+            </div>
+
+            <!-- Add Song Section -->
+            <div class="card">
+                <h2>Add Song to Queue</h2>
+                
+                <div class="mb-2">
+                    <label><strong>Option 1: Paste YouTube URL</strong></label>
+                    <div class="flex gap-2 mt-2">
+                        <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=...">
+                        <button id="addUrlBtn">Add</button>
+                    </div>
+                </div>
+
+                <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #e5e7eb;">
+
+                <div>
+                    <label><strong>Option 2: Search YouTube</strong></label>
+                    <div class="flex gap-2 mt-2">
+                        <input type="text" id="searchInput" placeholder="Search song...">
+                        <button id="searchBtn">Search</button>
+                    </div>
+                    <div id="searchResults" class="mt-2"></div>
+                </div>
+                
+                <p id="addError" class="text-sm mt-2" style="color: red;"></p>
+            </div>
+
+            <!-- Queue Section -->
+            <div class="card">
+                <h2>Queue</h2>
+                <div id="queueList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <div id="chatWidget" class="hidden">
+        <button id="chatToggleBtn">💬</button>
+        
+        <div id="chatPanel" class="card hidden">
+            <div class="chat-header">
+                <span>Live Chat 💬</span>
+                <button id="closeChatBtn">✖</button>
+            </div>
+            <div id="chatMessages">
+                <!-- Messages -->
+            </div>
+            <div class="chat-input-area">
+                <div id="mentionDropdown" class="hidden"></div>
+                <div id="chatContextDisplay" style="font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none;"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="chatInput" placeholder="Type a message... (@ to mention)" style="flex: 1;">
+                    <button id="sendChatBtn">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

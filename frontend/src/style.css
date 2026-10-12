@@ -1,0 +1,388 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg-color: #121212;
+  --bg-surface: #1e1e1e;
+  --bg-surface-hover: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #a7a7a7;
+  --primary: #1db954; /* Music App Green */
+  --primary-hover: #1ed760;
+  --danger: #ff4b4b;
+  --danger-hover: #ff7676;
+  --border: #333333;
+  --radius: 12px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* Header */
+h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  background: -webkit-linear-gradient(45deg, #1db954, #1ed760);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+h2, h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+/* Cards */
+.card {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Inputs */
+input[type="text"], input[type="password"] {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background-color: #2a2a2a;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2);
+}
+
+input[type="range"] {
+  accent-color: var(--primary);
+}
+
+/* Buttons */
+button {
+  background-color: var(--primary);
+  color: #121212;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: transform 0.1s, background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:hover {
+  background-color: var(--primary-hover);
+}
+
+button.danger {
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+button.danger:hover {
+  background-color: rgba(255, 75, 75, 0.1);
+}
+
+/* Utilities */
+.hidden { display: none !important; }
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.gap-2 { gap: 0.75rem; }
+.mt-2 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 1rem; }
+.text-sm { font-size: 0.85rem; color: var(--text-secondary); }
+.text-center { text-align: center; }
+
+/* List Items (Songs) */
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background-color: #242424;
+  margin-bottom: 0.75rem;
+  transition: background-color 0.2s, transform 0.2s;
+  border: 1px solid transparent;
+}
+
+.list-item:hover {
+  background-color: var(--bg-surface-hover);
+  transform: translateY(-2px);
+}
+
+.list-item img {
+  width: 90px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.list-item-content {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.list-item-content strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge.waiting { background-color: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge.playing { background-color: rgba(29, 185, 84, 0.15); color: #1ed760; border: 1px solid rgba(29, 185, 84, 0.3); }
+.badge.played { background-color: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }
+
+/* Now Playing Highlight */
+.list-item.playing {
+  border-color: var(--primary);
+  background-color: rgba(29, 185, 84, 0.05);
+}
+
+/* Admin Custom Controls */
+#customControls {
+  background: #181818 !important;
+  border: 1px solid var(--border) !important;
+}
+
+#customControls button {
+  background: #2a2a2a !important;
+  color: var(--text-primary) !important;
+  border-radius: 50px;
+  padding: 0.5rem 1rem;
+}
+
+#customControls button:hover {
+  background: #3a3a3a !important;
+  color: var(--primary) !important;
+}
+
+#customControls span {
+  color: var(--text-secondary) !important;
+}
+
+/* Request Limit Display */
+#requestLimitDisplay {
+  background: #2a2a2a;
+  padding: 0.2rem 0.8rem;
+  border-radius: 20px;
+  font-size: 1rem;
+  color: var(--primary);
+}
+/* Chat Widget Styles */
+#chatWidget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+#chatToggleBtn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  font-size: 24px;
+  padding: 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#chatToggleBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+
+#chatPanel {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: 340px;
+  max-width: calc(100vw - 48px);
+  height: 450px;
+  max-height: calc(100vh - 120px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  border: 1px solid var(--border);
+  transform-origin: bottom right;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.chat-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  padding: 12px 16px;
+  font-weight: 700;
+  color: #121212;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-header button {
+  background: transparent;
+  color: #121212;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  font-size: 1.2rem;
+  opacity: 0.7;
+}
+
+.chat-header button:hover {
+  background: transparent;
+  opacity: 1;
+}
+
+#chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.9rem;
+  background-color: var(--bg-surface);
+}
+
+.chat-input-area {
+  padding: 12px;
+  background: #181818;
+  border-top: 1px solid var(--border);
+}
+
+#chatInput {
+  border-radius: 24px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  background: #2a2a2a;
+}
+
+#sendChatBtn {
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.75rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+/* Mention Dropdown */
+.chat-input-area {
+  position: relative;
+}
+
+#mentionDropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 150px;
+  overflow-y: auto;
+  background: #2a2a2a;
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+}
+
+.mention-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.mention-item:last-child {
+  border-bottom: none;
+}
+
+.mention-item:hover, .mention-item.active {
+  background: #3a3a3a;
+  color: var(--primary);
+}

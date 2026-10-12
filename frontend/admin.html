@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Admin Dashboard</title>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Cafe Admin Dashboard</h1>
+        
+        <!-- Admin Auth -->
+        <div id="adminLoginSection" class="card" style="text-align: center; max-width: 400px; margin: 4rem auto;">
+            <h2 style="border: none;">Admin Login</h2>
+            <p class="text-sm mb-2">Please enter the master password.</p>
+            <input type="password" id="adminPasswordInput" placeholder="Admin Password" style="margin-bottom: 1rem;">
+            <button id="adminLoginBtn" style="width: 100%;">Login</button>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden">
+            <div class="card">
+                <div class="flex justify-between items-center">
+                    <h2>YouTube Player</h2>
+                    <div class="flex gap-2">
+                        <button id="playNextBtn">Play Next / Start</button>
+                        <button id="skipCurrentBtn" class="danger">Skip Current</button>
+                    </div>
+                </div>
+                <!-- Hide the player visually but keep it in document flow with opacity to prevent background throttling -->
+                <div style="opacity: 0.01; width: 1px; height: 1px; overflow: hidden; pointer-events: none; position: absolute; z-index: -1;">
+                    <div id="youtubePlayer"></div>
+                </div>
+
+                <div id="customControls" class="mt-2" style="background: #181818; padding: 1rem; border-radius: 8px; border: 1px solid #333;">
+                    <!-- Seek Bar -->
+                    <div class="flex items-center gap-2 mb-2">
+                        <span id="currentTimeDisplay" style="font-size: 0.85rem; color: #a7a7a7; min-width: 45px; text-align: right;">0:00</span>
+                        <input type="range" id="seekSlider" min="0" max="100" value="0" style="flex-grow: 1; cursor: pointer; padding: 0; background: transparent; border: none; box-shadow: none;">
+                        <span id="durationDisplay" style="font-size: 0.85rem; color: #a7a7a7; min-width: 45px;">0:00</span>
+                    </div>
+                    <!-- Volume Bar -->
+                    <div class="flex items-center gap-2" style="justify-content: center;">
+                        <span style="color: #a7a7a7; font-size: 1.2rem;">🔉</span>
+                        <input type="range" id="volSlider" min="0" max="100" value="100" style="width: 150px; cursor: pointer; padding: 0; background: transparent; border: none; box-shadow: none;">
+                        <span style="color: #a7a7a7; font-size: 1.2rem;">🔊</span>
+                        <span id="volDisplay" style="margin-left: 0.5rem; font-weight: bold; color: #fff; min-width: 45px;">100%</span>
+                    </div>
+                </div>
+                
+                <p id="playerStatus" class="text-sm mt-2 text-center" style="font-size: 1.1rem; font-weight: bold;"></p>
+            </div>
+
+            <div class="card flex justify-between items-center">
+                <h2>Manage Queue</h2>
+                <div class="flex gap-2 items-center">
+                    <div class="text-sm">🟢 Online: <span id="adminOnlineCountDisplay">0</span></div>
+                    <button id="clearQueueBtn" class="danger">Clear Entire Queue</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div id="adminQueueList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <div id="chatWidget" class="hidden">
+        <button id="chatToggleBtn">💬</button>
+        
+        <div id="chatPanel" class="card hidden">
+            <div class="chat-header">
+                <span>Live Chat 💬</span>
+                <button id="closeChatBtn">✖</button>
+            </div>
+            <div id="chatMessages">
+                <!-- Messages -->
+            </div>
+            <div class="chat-input-area">
+                <div id="mentionDropdown" class="hidden"></div>
+                <div id="chatContextDisplay" style="font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none;"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="chatInput" placeholder="Type a message... (@ to mention)" style="flex: 1;">
+                    <button id="sendChatBtn">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/admin.js"></script>
+</body>
+</html>
