@@ -1,0 +1,37 @@
+# zynt-cafe-music - dependencies and setup requirements
+#
+# This is a Node.js project, not a Python project. Dependency versions are
+# locked in backend/package-lock.json and frontend/package-lock.json.
+# After cloning, run the commands below instead of using `pip install -r`.
+
+Prerequisite:
+  Node.js ^20.19.0 or >=22.12.0 (includes npm)
+
+Install exact locked dependencies:
+  cd backend && npm ci
+  cd frontend && npm ci
+
+Backend runtime dependencies (backend/package.json):
+  axios ^1.20.0
+  cors ^2.8.6
+  dotenv ^18.0.1
+  express ^5.2.1
+  express-session ^1.19.0
+  socket.io ^4.8.3
+
+Frontend dependencies (frontend/package.json):
+  axios ^1.20.0
+  socket.io-client ^4.8.3
+
+Frontend development/build dependency:
+  vite ^8.3.0
+
+Environment variables for backend/.env (optional unless required by deployment):
+  PORT=8080
+  YOUTUBE_API_KEY=
+  YOUTUBE_API_KEY_2=
+  YOUTUBE_API_KEYS=
+  ADMIN_PASSWORD=
+  SESSION_SECRET=
+  MAX_ACTIVE_REQUESTS_PER_USER=3
+  REQUEST_COOLDOWN_SECONDS=5
