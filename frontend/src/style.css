@@ -495,6 +495,30 @@ input[type='range'] { height: 4px; border: 0; border-radius: 99px; outline: 0; a
 .gap-2 { gap: .75rem; }
 .hidden { display: none !important; }
 
+.developer-credit {
+  position: fixed;
+  bottom: 18px;
+  left: 18px;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface-solid);
+  box-shadow: 0 10px 30px rgba(0,0,0,.16);
+  color: var(--text-muted);
+  font-size: .62rem;
+  letter-spacing: .04em;
+  opacity: .78;
+  backdrop-filter: blur(14px);
+  transition: border-color .2s, color .2s, opacity .2s, transform .2s;
+}
+.developer-credit strong { color: var(--primary-hover); font-size: .66rem; letter-spacing: .1em; }
+.developer-credit i { width: 3px; height: 3px; border-radius: 50%; background: var(--primary); }
+.developer-credit:hover { border-color: var(--border-strong); color: var(--text-secondary); opacity: 1; transform: translateY(-2px); }
+
 #chatWidget { position: fixed; right: 26px; bottom: 26px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; }
 #chatToggleBtn { position: relative; width: 58px; height: 58px; min-height: 58px; padding: 0; border: 1px solid rgba(198,167,255,.4); border-radius: 18px; background: var(--primary); box-shadow: 0 14px 38px rgba(67,42,96,.36); }
 #chatToggleBtn svg, #sendChatBtn svg, #closeChatBtn svg { width: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -572,6 +596,8 @@ input[type='range'] { height: 4px; border: 0; border-radius: 99px; outline: 0; a
   .volume-control input { flex: 1; width: auto; }
   .toolbar-actions { align-items: flex-end; flex-direction: column; }
   .admin-online-summary { max-width: 100%; align-items: flex-end; }
+  .developer-credit { bottom: 14px; left: 14px; max-width: calc(100vw - 92px); }
+  .developer-credit span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #chatWidget { right: 14px; bottom: 14px; }
 }
 
