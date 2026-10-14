@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { initSocket, sendChatMessage, getSocket, voteToSkip as submitSkipVote } from './socket.js';
-import { getRecommendationProfile, rankRecommendations, recordSongActivity } from './listeningHistory.js';
+import { getRecommendationProfile, rankRecommendations, recordSearchActivity, recordSongActivity } from './listeningHistory.js';
 import { initThemeToggle } from './theme.js';
 import { ICONS } from './icons.js';
 
@@ -48,6 +48,7 @@ let currentOnlineUsers = [];
 let playbackTimer = null;
 let votedSkipSongId = null;
 const skipVoteProgress = new Map();
+let recommendationRequestId = 0;
 
 initThemeToggle(themeToggleBtn);
 chatToggleBtn.setAttribute('aria-expanded', 'false');
@@ -141,16 +142,37 @@ const updatePlaybackTimer = () => {
     }
 };
 
-const loadRecommendations = async () => {
-    if (searchResults.innerHTML.trim() !== '') return; // Don't overwrite if already searched
+const loadRecommendations = async ({ force = false } = {}) => {
+    if (!force && searchResults.innerHTML.trim() !== '') return;
+    const requestId = ++recommendationRequestId;
+    searchResults.innerHTML = '<p class="text-sm text-center">Refreshing recommendations...</p>';
     try {
         const profile = getRecommendationProfile();
-        const queries = ['เพลงชิล คาเฟ่', 'เพลงฮิต tpop', 'เพลงสากล ชิลๆ', 'เพลงอินดี้ คาเฟ่'];
-        const fallbackQuery = queries[Math.floor(Math.random() * queries.length)];
-        const res = await api.searchYouTube(profile.query || fallbackQuery);
-        const recommendations = rankRecommendations(res.data, profile.rankedHistory);
-        renderSearchResults(recommendations, true, profile.rankedHistory.length > 0);
+        const fallbackQueries = ['เพลงชิล คาเฟ่', 'เพลงฮิต tpop', 'เพลงสากล ชิลๆ', 'เพลงอินดี้ คาเฟ่'];
+        const queries = profile.queries.length
+            ? profile.queries.slice(0, 2)
+            : [fallbackQueries[Math.floor(Math.random() * fallbackQueries.length)]];
+        const responses = await Promise.allSettled(queries.map(query => api.searchYouTube(query)));
+        if (requestId !== recommendationRequestId) return;
+
+        const uniqueResults = new Map();
+        responses.forEach(response => {
+            if (response.status !== 'fulfilled') return;
+            response.value.data.forEach(song => uniqueResults.set(song.videoId, song));
+        });
+        if (!uniqueResults.size) throw new Error('No recommendation results');
+
+        const activeVideoIds = currentQueue
+            .filter(song => song.status === 'WAITING' || song.status === 'PLAYING')
+            .map(song => song.youtubeVideoId);
+        const recommendations = rankRecommendations(
+            [...uniqueResults.values()],
+            profile.rankedHistory,
+            [...profile.excludedVideoIds, ...activeVideoIds]
+        ).slice(0, 10);
+        renderSearchResults(recommendations, true, profile.hasPersonalization);
     } catch (e) {
+        if (requestId === recommendationRequestId) searchResults.innerHTML = '';
         console.error('Failed to load recommendations', e);
     }
 };
@@ -344,10 +366,12 @@ const handleLogout = async () => {
 const handleSearch = async () => {
     const query = searchInput.value.trim();
     if (!query) return;
+    recommendationRequestId++;
     searchBtn.disabled = true;
     searchResults.innerHTML = '<p class="text-sm text-center">Searching...</p>';
     try {
         const res = await api.searchYouTube(query);
+        recordSearchActivity(query);
         renderSearchResults(res.data, false);
     } catch (e) {
         addError.innerText = 'Search failed';
@@ -388,7 +412,7 @@ window.addSongToQueue = async (videoId, url = null) => {
         searchResults.innerHTML = '';
         searchInput.value = '';
         urlInput.value = '';
-        loadRecommendations();
+        await loadRecommendations({ force: true });
     } catch (e) {
         addError.innerText = e.response?.data?.error || 'Failed to add song';
     }

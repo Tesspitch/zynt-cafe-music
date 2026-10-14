@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'cafeMusicListeningHistoryV1';
+const SEARCH_STORAGE_KEY = 'cafeMusicSearchHistoryV1';
 const MAX_HISTORY_ITEMS = 100;
+const MAX_SEARCH_ITEMS = 30;
 
 const readHistory = () => {
     try {
@@ -16,6 +18,37 @@ const writeHistory = (history) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS)));
     } catch (error) {
         console.warn('Could not save listening history', error);
+    }
+};
+
+const readSearchHistory = () => {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(SEARCH_STORAGE_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.warn('Could not read search history', error);
+        return [];
+    }
+};
+
+const normalize = (value = '') => value.trim().toLocaleLowerCase();
+
+export const recordSearchActivity = (query) => {
+    const trimmedQuery = query?.trim();
+    if (!trimmedQuery) return;
+
+    try {
+        const history = readSearchHistory();
+        const existingIndex = history.findIndex(item => normalize(item.query) === normalize(trimmedQuery));
+        const previous = existingIndex >= 0 ? history.splice(existingIndex, 1)[0] : {};
+        history.unshift({
+            query: trimmedQuery,
+            count: (previous.count || 0) + 1,
+            lastSearchedAt: new Date().toISOString()
+        });
+        localStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(history.slice(0, MAX_SEARCH_ITEMS)));
+    } catch (error) {
+        console.warn('Could not save search history', error);
     }
 };
 
@@ -57,21 +90,33 @@ export const getRecommendationProfile = () => {
     const rankedHistory = readHistory()
         .map(item => ({ ...item, score: activityScore(item) }))
         .sort((a, b) => b.score - a.score);
+    const recentHistory = [...rankedHistory]
+        .sort((a, b) => new Date(b.lastActivityAt || 0) - new Date(a.lastActivityAt || 0));
+    const searchHistory = readSearchHistory()
+        .sort((a, b) => new Date(b.lastSearchedAt || 0) - new Date(a.lastSearchedAt || 0));
+    const latestSong = recentHistory[0];
+    const queryCandidates = [
+        latestSong?.channelName ? `${latestSong.channelName} เพลง` : null,
+        searchHistory[0]?.query,
+        latestSong?.title ? `${latestSong.title} เพลงคล้ายกัน` : null,
+        ...recentHistory.slice(1, 4).map(item => item.channelName ? `${item.channelName} เพลง` : item.title),
+        ...rankedHistory.slice(0, 3).map(item => item.channelName ? `${item.channelName} เพลง` : item.title)
+    ].filter(Boolean);
+    const queries = [...new Map(queryCandidates.map(query => [normalize(query), query])).values()].slice(0, 3);
 
-    if (rankedHistory.length === 0) {
-        return { query: null, rankedHistory: [] };
-    }
-
-    const topSong = rankedHistory[0];
-    const query = topSong.channelName
-        ? `${topSong.channelName} เพลง`
-        : topSong.title;
-
-    return { query, rankedHistory };
+    return {
+        queries,
+        rankedHistory,
+        hasPersonalization: rankedHistory.length > 0 || searchHistory.length > 0,
+        excludedVideoIds: recentHistory.slice(0, 20).map(item => item.videoId)
+    };
 };
 
-export const rankRecommendations = (results, rankedHistory) => {
-    if (!rankedHistory.length) return results;
+export const rankRecommendations = (results, rankedHistory, excludedVideoIds = []) => {
+    const excluded = new Set(excludedVideoIds);
+    const unseenResults = results.filter(song => !excluded.has(song.videoId));
+    const candidates = unseenResults.length ? unseenResults : results;
+    if (!rankedHistory.length) return candidates;
 
     const historyByVideoId = new Map(rankedHistory.map(item => [item.videoId, item]));
     const preferredChannels = new Map();
@@ -80,7 +125,7 @@ export const rankRecommendations = (results, rankedHistory) => {
         if (channel) preferredChannels.set(channel, (preferredChannels.get(channel) || 0) + item.score);
     });
 
-    return [...results].sort((a, b) => {
+    return [...candidates].sort((a, b) => {
         const getScore = (song) => {
             const historyScore = historyByVideoId.get(song.videoId)?.score || 0;
             const channelScore = preferredChannels.get(song.channelName?.trim().toLowerCase()) || 0;
