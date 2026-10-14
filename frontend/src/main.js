@@ -280,30 +280,31 @@ const updateLimit = () => {
 };
 
 const renderQueue = () => {
-    queueList.innerHTML = '';
     nowPlayingContainer.innerHTML = '<p class="text-sm">Nothing is playing right now.</p>';
+    const playingSong = currentQueue.find(item => item.status === 'PLAYING');
+    const waitingSongs = currentQueue
+        .filter(item => item.status === 'WAITING')
+        .sort((a, b) => new Date(a.requestedAt || 0) - new Date(b.requestedAt || 0));
+    const historySongs = currentQueue
+        .filter(item => item.status === 'PLAYED' || item.status === 'SKIPPED')
+        .sort((a, b) => new Date(b.finishedAt || b.requestedAt || 0) - new Date(a.finishedAt || a.requestedAt || 0));
 
-    const activeItems = currentQueue.filter(q => q.status !== 'REMOVED');
-    
-    // Sort so WAITING is above PLAYED/SKIPPED
-    activeItems.sort((a, b) => {
-        const order = { 'WAITING': 1, 'PLAYED': 2, 'SKIPPED': 2, 'PLAYING': 0 };
-        const orderA = order[a.status] ?? 99;
-        const orderB = order[b.status] ?? 99;
-        return orderA - orderB;
-    });
+    queueList.innerHTML = `
+        <section class="queue-status-group waiting-group">
+            <div class="queue-group-heading"><div><span class="queue-group-kicker">UP NEXT</span><h3>Waiting</h3></div><span class="queue-count">${waitingSongs.length}</span></div>
+            <div class="queue-group-list">${waitingSongs.length ? waitingSongs.map(item => renderQueueItem(item, false)).join('') : '<p class="queue-empty">No songs are waiting.</p>'}</div>
+        </section>
+        <section class="queue-status-group history-group">
+            <div class="queue-group-heading"><div><span class="queue-group-kicker">PLAYED / SKIPPED</span><h3>History</h3></div><span class="queue-count">${historySongs.length}</span></div>
+            <div class="queue-group-list">${historySongs.length ? historySongs.map(item => renderQueueItem(item, false)).join('') : '<p class="queue-empty">No listening history yet.</p>'}</div>
+        </section>
+    `;
 
-    activeItems.forEach(item => {
-        if (item.status === 'PLAYING') {
-            nowPlayingContainer.innerHTML = renderQueueItem(item, true);
-            chatContextDisplay.innerText = `Now playing: ${item.title}`;
-            chatContextDisplay.style.display = 'block';
-        } else {
-            queueList.innerHTML += renderQueueItem(item, false);
-        }
-    });
-    
-    if (!activeItems.find(q => q.status === 'PLAYING')) {
+    if (playingSong) {
+        nowPlayingContainer.innerHTML = renderQueueItem(playingSong, true);
+        chatContextDisplay.innerText = `Now playing: ${playingSong.title}`;
+        chatContextDisplay.style.display = 'block';
+    } else {
         chatContextDisplay.style.display = 'none';
     }
     updatePlaybackTimer();

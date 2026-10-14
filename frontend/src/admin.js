@@ -309,14 +309,14 @@ window.adminForcePlaySong = async (id) => {
 };
 
 const renderAdminQueue = () => {
-    const sortedQueue = [...currentQueue].sort((a, b) => {
-        const order = { 'WAITING': 1, 'PLAYED': 2, 'SKIPPED': 2, 'REMOVED': 3, 'PLAYING': 0 };
-        const orderA = order[a.status] ?? 99;
-        const orderB = order[b.status] ?? 99;
-        return orderA - orderB;
-    });
+    const waitingSongs = currentQueue
+        .filter(song => song.status === 'WAITING')
+        .sort((a, b) => new Date(a.requestedAt || 0) - new Date(b.requestedAt || 0));
+    const historySongs = currentQueue
+        .filter(song => ['PLAYED', 'SKIPPED', 'REMOVED'].includes(song.status))
+        .sort((a, b) => new Date(b.finishedAt || b.requestedAt || 0) - new Date(a.finishedAt || a.requestedAt || 0));
 
-    adminQueueList.innerHTML = sortedQueue.map((q, index) => {
+    const renderAdminQueueItem = (q) => {
         let badge = `<span class="badge ${q.status.toLowerCase()}">${q.status}</span>`;
         let controls = '';
         
@@ -339,7 +339,18 @@ const renderAdminQueue = () => {
                 </div>
             </div>
         `;
-    }).join('');
+    };
+
+    adminQueueList.innerHTML = `
+        <section class="queue-status-group waiting-group">
+            <div class="queue-group-heading"><div><span class="queue-group-kicker">UP NEXT</span><h3>Waiting</h3></div><span class="queue-count">${waitingSongs.length}</span></div>
+            <div class="queue-group-list">${waitingSongs.length ? waitingSongs.map(renderAdminQueueItem).join('') : '<p class="queue-empty">No songs are waiting.</p>'}</div>
+        </section>
+        <section class="queue-status-group history-group">
+            <div class="queue-group-heading"><div><span class="queue-group-kicker">PLAYED / SKIPPED</span><h3>History</h3></div><span class="queue-count">${historySongs.length}</span></div>
+            <div class="queue-group-list">${historySongs.length ? historySongs.map(renderAdminQueueItem).join('') : '<p class="queue-empty">No queue history yet.</p>'}</div>
+        </section>
+    `;
 
     const playingSong = currentQueue.find(q => q.status === 'PLAYING');
     if (playingSong) {
