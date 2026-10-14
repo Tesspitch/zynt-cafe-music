@@ -25,6 +25,8 @@ const addUrlBtn = document.getElementById('addUrlBtn');
 const addError = document.getElementById('addError');
 
 const queueList = document.getElementById('queueList');
+const quickQueueList = document.getElementById('quickQueueList');
+const queueSummaryCount = document.getElementById('queueSummaryCount');
 const nowPlayingContainer = document.getElementById('nowPlayingContainer');
 const requestLimitDisplay = document.getElementById('requestLimitDisplay');
 
@@ -288,6 +290,24 @@ const renderQueue = () => {
     const historySongs = currentQueue
         .filter(item => item.status === 'PLAYED' || item.status === 'SKIPPED')
         .sort((a, b) => new Date(b.finishedAt || b.requestedAt || 0) - new Date(a.finishedAt || a.requestedAt || 0));
+
+    if (queueSummaryCount) {
+        queueSummaryCount.textContent = `${waitingSongs.length} waiting`;
+    }
+
+    if (quickQueueList) {
+        const quickQueueSongs = playingSong ? [playingSong, ...waitingSongs] : waitingSongs;
+        quickQueueList.innerHTML = quickQueueSongs.length
+            ? quickQueueSongs.map((item, index) => `
+                <div class="mini-queue-item ${item.status === 'PLAYING' ? 'is-playing' : ''}">
+                    <span class="mini-queue-position">${item.status === 'PLAYING' ? 'NOW' : index + (playingSong ? 0 : 1)}</span>
+                    <img src="${item.thumbnailUrl}" alt="" loading="lazy" decoding="async">
+                    <div><strong>${item.title}</strong><span>${item.channelName} · ${item.requestedBy}</span></div>
+                    <span class="badge ${item.status.toLowerCase()}">${item.status}</span>
+                </div>
+            `).join('')
+            : '<p class="queue-empty">The queue is empty.</p>';
+    }
 
     queueList.innerHTML = `
         <section class="queue-status-group waiting-group">
