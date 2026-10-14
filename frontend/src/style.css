@@ -593,20 +593,35 @@ input[type='range'] { height: 4px; border: 0; border-radius: 99px; outline: 0; a
 }
 
 @media (max-width: 590px) {
-  .container { width: min(100% - 24px, 1080px); }
+  html, body { width: 100%; max-width: 100%; }
+  body { background-size: 28px 28px; }
+  .container { width: calc(100% - 20px); }
+  .app-shell { padding-bottom: 108px; }
   .app-header { min-height: 84px; }
+  .brand { min-width: 0; gap: 9px; }
+  .brand-mark { flex: 0 0 38px; width: 38px; height: 38px; padding: 8px; }
+  .brand strong { font-size: .92rem; }
+  .brand small { font-size: .52rem; letter-spacing: .17em; }
   .header-caption { display: none; }
   .admin-chip { display: none; }
-  .login-layout { min-height: calc(100vh - 85px); padding-top: 46px; }
-  .login-copy h1 { font-size: 3rem; }
-  .login-card, .card { padding: 20px; border-radius: 18px; }
+  .login-layout { min-height: calc(100svh - 85px); gap: 30px; padding: 34px 0 76px; }
+  .login-copy h1 { margin-block: 14px 18px; font-size: clamp(2.55rem, 13vw, 3.4rem); }
+  .login-copy > p { font-size: .95rem; }
+  .sound-wave { margin-top: 24px; }
+  .login-card, .card { width: 100%; max-width: 100%; padding: 18px; border-radius: 18px; }
   .step-number { right: 20px; }
   .dashboard-stack { padding-top: 20px; }
   .topbar, .queue-toolbar { align-items: flex-start; gap: 16px; }
+  .topbar > div, .queue-toolbar > div, .section-heading > div { min-width: 0; }
+  .welcome-name { overflow-wrap: anywhere; }
   .stat-grid { grid-template-columns: 1fr; }
   .section-heading, .admin-player-heading { flex-direction: column; }
+  .section-heading { gap: 10px; margin-bottom: 17px; }
+  .section-index { position: absolute; top: 18px; right: 18px; font-size: 2rem; }
+  .request-option { gap: 10px; padding: 14px; }
+  .option-number { flex-basis: 27px; width: 27px; height: 27px; }
   .queue-summary { padding: 14px; }
-  .queue-summary-title { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .queue-summary-title { min-width: 0; align-items: flex-start; flex-direction: column; gap: 6px; }
   .queue-summary-action > span { display: none !important; }
   .mini-queue-item { grid-template-columns: 28px 48px minmax(0, 1fr); }
   .mini-queue-item img { width: 48px; height: 34px; }
@@ -619,19 +634,62 @@ input[type='range'] { height: 4px; border: 0; border-radius: 99px; outline: 0; a
   .request-option .input-action button { width: 54px; min-width: 54px; }
   .chat-action { flex-direction: row; }
   .chat-action button { width: 44px; }
-  .list-item { align-items: flex-start; flex-wrap: wrap; }
-  .list-item img { flex-basis: 92px; width: 92px; height: 62px; }
-  .list-item > button:not(.icon-button) { margin-left: 108px; }
-  .list-item > .icon-button { margin-left: auto; }
+  .queue-group-heading { padding: 13px 14px; }
+  .queue-group-heading > div { min-width: 0; flex-wrap: wrap; gap: 5px 9px; }
+  .queue-group-list { padding: 7px; }
+  .list-item { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px; }
+  .list-item img { width: 74px; height: 50px; }
+  .list-item-content { overflow: hidden; }
+  .list-item-content > strong { font-size: .84rem; }
+  .list-item-content .flex, .skip-vote-row { flex-wrap: wrap; }
+  .list-item > button { grid-column: 3; margin-left: 0 !important; }
+  .list-item > button:not(.icon-button) { grid-column: 2 / -1; width: 100%; }
+  .skip-vote-row { align-items: flex-start; }
+  .skip-vote-row > span { flex: 1 1 120px; }
+  .admin-now-playing { min-width: 0; padding: 14px; }
+  .admin-now-playing-info strong { font-size: clamp(1.35rem, 8vw, 2rem); }
   .player-controls { grid-template-columns: 1fr; }
   .play-toggle { width: 100%; }
+  .timeline-control { min-width: 0; }
   .volume-control { grid-column: auto; justify-content: stretch; }
   .volume-control input { flex: 1; width: auto; }
-  .toolbar-actions { align-items: flex-end; flex-direction: column; }
-  .admin-online-summary { max-width: 100%; align-items: flex-end; }
+  .toolbar-actions { width: 100%; align-items: stretch; flex-direction: column; }
+  .toolbar-actions > button { width: 100%; }
+  .admin-online-summary { max-width: 100%; align-items: flex-start; }
+  .admin-online-summary .online-user-list { justify-content: flex-start; }
   .developer-credit { bottom: 14px; left: 14px; max-width: calc(100vw - 92px); }
   .developer-credit span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #chatWidget { right: 14px; bottom: 14px; }
+  #chatPanel { right: 0; bottom: 68px; width: calc(100vw - 20px); height: min(520px, calc(100dvh - 100px)); }
+}
+
+@media (max-width: 390px) {
+  .container { width: calc(100% - 14px); }
+  .header-actions { gap: 7px; }
+  .theme-toggle.icon-button { width: 38px; min-width: 38px; height: 38px; }
+  .login-copy h1 { font-size: clamp(2.25rem, 13vw, 2.9rem); }
+  .login-card, .card { padding: 15px; border-radius: 16px; }
+  .topbar { align-items: stretch; flex-direction: column; }
+  .topbar > button { width: 100%; }
+  .section-heading h2, .queue-toolbar h2 { font-size: 1.32rem; }
+  .request-option { padding: 11px; }
+  .option-number { display: none; }
+  .queue-summary { padding: 12px; }
+  .queue-summary-count { font-size: .59rem; }
+  .mini-queue-item { grid-template-columns: 24px 42px minmax(0, 1fr); gap: 7px; padding-inline: 5px; }
+  .mini-queue-item img { width: 42px; height: 31px; }
+  .button-row { flex-direction: column; }
+  .button-row button { width: 100%; }
+  .list-item { grid-template-columns: 62px minmax(0, 1fr) auto; gap: 8px; padding: 8px; }
+  .list-item img { width: 62px; height: 44px; }
+  .list-item .text-sm { font-size: .68rem; }
+  .list-item-content .flex { align-items: stretch; flex-direction: column; }
+  .list-item-content .flex > button { width: 100%; }
+  .timeline-control, .volume-control { gap: 7px; }
+  .control-label { display: none; }
+  .developer-credit span:last-child, .developer-credit i { display: none; }
+  #chatToggleBtn { width: 52px; height: 52px; min-height: 52px; }
+  #chatPanel { width: calc(100vw - 14px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
