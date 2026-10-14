@@ -3,92 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cafe Admin Dashboard</title>
+    <meta name="theme-color" content="#111311">
+    <title>Cafe Music Control Room</title>
     <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
-    <div class="container">
-        <h1>🛠️ Cafe Admin Dashboard</h1>
-        
-        <!-- Admin Auth -->
-        <div id="adminLoginSection" class="card" style="text-align: center; max-width: 400px; margin: 4rem auto;">
-            <h2 style="border: none;">Admin Login</h2>
-            <p class="text-sm mb-2">Please enter the master password.</p>
-            <input type="password" id="adminPasswordInput" placeholder="Admin Password" style="margin-bottom: 1rem;">
-            <button id="adminLoginBtn" style="width: 100%;">Login</button>
-        </div>
+<body class="admin-page">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="container app-shell">
+        <header class="app-header">
+            <a class="brand" href="/admin.html" aria-label="Cafe Music control room"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span><small>ZYNTELLIGENT</small><strong>Control Room</strong></span></a>
+            <div class="header-actions"><span class="admin-chip">ADMIN CONSOLE</span><button id="themeToggleBtn" class="theme-toggle icon-button" type="button" aria-label="Switch color theme"></button></div>
+        </header>
 
-        <!-- Admin Dashboard -->
-        <div id="adminDashboard" class="hidden">
-            <div class="card">
-                <div class="flex justify-between items-center">
-                    <h2>YouTube Player</h2>
-                    <div class="flex gap-2">
-                        <button id="playNextBtn">Play Next / Start</button>
-                        <button id="skipCurrentBtn" class="danger">Skip Current</button>
-                    </div>
+        <main>
+            <section id="adminLoginSection" class="login-layout admin-login-layout">
+                <div class="login-copy">
+                    <span class="eyebrow">CONTROL THE ROOM</span>
+                    <h1>Keep the music<br><em>moving smoothly.</em></h1>
+                    <p>Manage playback, monitor the live queue and keep everyone in sync.</p>
+                    <div class="sound-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
                 </div>
-                <!-- Hide the player visually but keep it in document flow with opacity to prevent background throttling -->
-                <div style="opacity: 0.01; width: 1px; height: 1px; overflow: hidden; pointer-events: none; position: absolute; z-index: -1;">
-                    <div id="youtubePlayer"></div>
+                <div class="card login-card">
+                    <span class="step-number">A</span><p class="eyebrow">SECURE ACCESS</p><h2>Open the control room</h2>
+                    <p class="text-sm mb-2">Enter the administrator password to continue.</p>
+                    <label class="field-label" for="adminPasswordInput">Admin password</label>
+                    <input type="password" id="adminPasswordInput" placeholder="Enter password" autocomplete="current-password">
+                    <button id="adminLoginBtn" class="button-block button-with-icon mt-2"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Enter dashboard</span></button>
                 </div>
+            </section>
 
-                <div id="customControls" class="mt-2" style="background: #181818; padding: 1rem; border-radius: 8px; border: 1px solid #333;">
-                    <!-- Seek Bar -->
-                    <div class="flex items-center gap-2 mb-2">
-                        <span id="currentTimeDisplay" style="font-size: 0.85rem; color: #a7a7a7; min-width: 45px; text-align: right;">0:00</span>
-                        <input type="range" id="seekSlider" min="0" max="100" value="0" style="flex-grow: 1; cursor: pointer; padding: 0; background: transparent; border: none; box-shadow: none;">
-                        <span id="durationDisplay" style="font-size: 0.85rem; color: #a7a7a7; min-width: 45px;">0:00</span>
+            <div id="adminDashboard" class="hidden dashboard-stack">
+                <section class="card player-card">
+                    <div class="section-heading admin-player-heading">
+                        <div><span class="eyebrow">PLAYBACK</span><h2>Room player</h2></div>
+                        <div class="button-row"><button id="playNextBtn" class="button-with-icon"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 8 6-8 6V6ZM17 6v12"/></svg><span>Play next</span></button><button id="skipCurrentBtn" class="button-ghost danger button-with-icon"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 6 8 6-8 6V6ZM16 7v10"/></svg><span>Skip current</span></button></div>
                     </div>
-                    <!-- Volume Bar -->
-                    <div class="flex items-center gap-2" style="justify-content: center;">
-                        <span style="color: #a7a7a7; font-size: 1.2rem;">🔉</span>
-                        <input type="range" id="volSlider" min="0" max="100" value="100" style="width: 150px; cursor: pointer; padding: 0; background: transparent; border: none; box-shadow: none;">
-                        <span style="color: #a7a7a7; font-size: 1.2rem;">🔊</span>
-                        <span id="volDisplay" style="margin-left: 0.5rem; font-weight: bold; color: #fff; min-width: 45px;">100%</span>
+                    <div id="adminNowPlaying" class="admin-now-playing">
+                        <div class="cover-frame"><img id="adminNowPlayingCover" src="" alt="Current song cover" class="hidden"><div class="cover-placeholder" aria-hidden="true"><span></span><span></span><span></span></div></div>
+                        <div class="admin-now-playing-info"><span class="eyebrow">NOW PLAYING</span><strong id="adminNowPlayingTitle">No song is playing</strong><span id="adminNowPlayingMeta" class="text-sm">Choose a song from the queue to start.</span><p id="playerStatus" class="player-status"></p></div>
                     </div>
-                </div>
-                
-                <p id="playerStatus" class="text-sm mt-2 text-center" style="font-size: 1.1rem; font-weight: bold;"></p>
-            </div>
+                    <div class="youtube-player-shell" aria-hidden="true"><div id="youtubePlayer"></div></div>
+                    <div id="customControls" class="player-controls">
+                        <button id="playPauseBtn" class="play-toggle button-with-icon" type="button" disabled aria-label="Play current song"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6V6Z"/></svg><span>Play</span></button>
+                        <div class="timeline-control"><span id="currentTimeDisplay">0:00</span><input type="range" id="seekSlider" min="0" max="100" value="0" aria-label="Seek through song"><span id="durationDisplay">0:00</span></div>
+                        <div class="volume-control"><span class="control-label">VOLUME</span><input type="range" id="volSlider" min="0" max="100" value="100" aria-label="Volume"><span id="volDisplay">100%</span></div>
+                    </div>
+                </section>
 
-            <div class="card flex justify-between items-center">
-                <h2>Manage Queue</h2>
-                <div class="flex gap-2 items-center">
-                    <div class="text-sm">🟢 Online: <span id="adminOnlineCountDisplay">0</span></div>
-                    <button id="clearQueueBtn" class="danger">Clear Entire Queue</button>
-                </div>
+                <section class="card compact-card queue-toolbar">
+                    <div><span class="eyebrow">LIVE QUEUE</span><h2>Manage requests</h2></div>
+                    <div class="toolbar-actions"><div class="admin-online-summary"><span class="online-readout"><i class="status-dot"></i><span id="adminOnlineCountDisplay">0</span> online</span><div id="adminOnlineUsersList" class="online-user-list compact" aria-live="polite"></div></div><button id="clearQueueBtn" class="button-ghost danger button-with-icon"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg><span>Clear queue</span></button></div>
+                </section>
+                <section class="card queue-card"><div id="adminQueueList"></div></section>
             </div>
-            
-            <div class="card">
-                <div id="adminQueueList"></div>
-            </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Chat Widget -->
     <div id="chatWidget" class="hidden">
-        <button id="chatToggleBtn">💬</button>
-        
+        <button id="chatToggleBtn" aria-label="Open live chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5 3 21v-5.2A8 8 0 0 1 2 12C2 7.6 6.5 4 12 4s10 3.6 10 8-4.5 8-10 8c-1.6 0-3.1-.3-4.5-.8Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></button>
         <div id="chatPanel" class="card hidden">
-            <div class="chat-header">
-                <span>Live Chat 💬</span>
-                <button id="closeChatBtn">✖</button>
-            </div>
-            <div id="chatMessages">
-                <!-- Messages -->
-            </div>
+            <div class="chat-header"><div><span class="chat-presence"></span><span>Live chat</span></div><button id="closeChatBtn" aria-label="Close chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+            <div id="chatMessages"></div>
             <div class="chat-input-area">
-                <div id="mentionDropdown" class="hidden"></div>
-                <div id="chatContextDisplay" style="font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none;"></div>
-                <div class="flex gap-2">
-                    <input type="text" id="chatInput" placeholder="Type a message... (@ to mention)" style="flex: 1;">
-                    <button id="sendChatBtn">➤</button>
-                </div>
+                <div id="mentionDropdown" class="hidden"></div><div id="chatContextDisplay" class="chat-context"></div>
+                <div class="input-action chat-action"><input type="text" id="chatInput" placeholder="Write a message... (@ to mention)"><button id="sendChatBtn" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Z"/><path d="M7 12h14"/></svg></button></div>
             </div>
         </div>
     </div>
-
     <script type="module" src="/src/admin.js"></script>
 </body>
 </html>

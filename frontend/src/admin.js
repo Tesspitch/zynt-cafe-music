@@ -1,10 +1,16 @@
 import { api } from './api.js';
 import { initSocket, sendChatMessage, getSocket } from './socket.js';
+import { recordSongActivity } from './listeningHistory.js';
+import { initThemeToggle } from './theme.js';
+import { ICONS } from './icons.js';
 
 let adminPassword = null;
 let currentQueue = [];
 let ytPlayer = null;
 let currentPlayingId = null;
+let currentPlayingSong = null;
+const recordedPlayQueueIds = new Set();
+const CHAT_ICON_MARKUP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5 3 21v-5.2A8 8 0 0 1 2 12C2 7.6 6.5 4 12 4s10 3.6 10 8-4.5 8-10 8c-1.6 0-3.1-.3-4.5-.8Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>';
 
 // DOM Elements
 const adminLoginSection = document.getElementById('adminLoginSection');
@@ -21,6 +27,11 @@ const currentTimeDisplay = document.getElementById('currentTimeDisplay');
 const durationDisplay = document.getElementById('durationDisplay');
 const volSlider = document.getElementById('volSlider');
 const volDisplay = document.getElementById('volDisplay');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const adminNowPlayingCover = document.getElementById('adminNowPlayingCover');
+const adminNowPlayingTitle = document.getElementById('adminNowPlayingTitle');
+const adminNowPlayingMeta = document.getElementById('adminNowPlayingMeta');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
 
 // Chat Elements
 const chatWidget = document.getElementById('chatWidget');
@@ -38,6 +49,9 @@ let currentOnlineUsers = [];
 let isDraggingSeek = false;
 let seekUpdateInterval;
 
+initThemeToggle(themeToggleBtn);
+chatToggleBtn.setAttribute('aria-expanded', 'false');
+
 const formatTime = (seconds) => {
     const min = Math.floor(seconds / 60);
     const sec = Math.floor(seconds % 60);
@@ -50,6 +64,35 @@ const updateVolumeDisplay = () => {
         ytPlayer.setVolume(vol);
         volDisplay.innerText = `${vol}%`;
     }
+};
+
+const updatePlayPauseButton = (isPlaying = false) => {
+    const hasCurrentSong = Boolean(currentPlayingId);
+    playPauseBtn.disabled = !hasCurrentSong || !ytPlayer;
+    playPauseBtn.innerHTML = `${isPlaying ? ICONS.pause : ICONS.play}<span>${isPlaying ? 'Pause' : 'Play'}</span>`;
+    playPauseBtn.setAttribute('aria-label', isPlaying ? 'Pause current song' : 'Play current song');
+};
+
+const renderAdminNowPlaying = (song) => {
+    if (!song) {
+        adminNowPlayingCover.classList.add('hidden');
+        adminNowPlayingCover.removeAttribute('src');
+        adminNowPlayingTitle.innerText = 'No song is playing';
+        adminNowPlayingMeta.innerText = 'Choose a song from the queue to start.';
+        updatePlayPauseButton(false);
+        return;
+    }
+
+    const coverUrl = song.thumbnailUrl || song.thumbnail;
+    if (coverUrl) {
+        adminNowPlayingCover.src = coverUrl;
+        adminNowPlayingCover.alt = `Cover for ${song.title}`;
+        adminNowPlayingCover.classList.remove('hidden');
+    } else {
+        adminNowPlayingCover.classList.add('hidden');
+    }
+    adminNowPlayingTitle.innerText = song.title;
+    adminNowPlayingMeta.innerText = `${song.channelName || 'Unknown channel'} • Requested by ${song.requestedBy}`;
 };
 
 // Init YouTube API dynamically to avoid race conditions with ES Modules
@@ -73,7 +116,7 @@ window.onYouTubeIframeAPIReady = () => {
 
 const onPlayerError = (event) => {
     console.error('YouTube Player Error:', event.data);
-    playerStatus.innerText = '⚠️ Error playing video! Skipping to next...';
+    playerStatus.innerText = 'Playback error. Skipping to the next song...';
     setTimeout(() => {
         if (currentPlayingId) {
             handlePlayNext();
@@ -90,7 +133,7 @@ const onPlayerReady = (event) => {
     playerStatus.innerText = 'Player is ready.';
     // If a song is already set as playing but wasn't loaded because player wasn't ready
     if (currentPlayingId && currentQueue) {
-        const playingSong = currentQueue.find(q => q.id === currentPlayingId);
+        const playingSong = currentQueue.find(q => q.id === currentPlayingId) || currentPlayingSong;
         if (playingSong && ytPlayer.loadVideoById) {
             ytPlayer.unMute();
             ytPlayer.loadVideoById(playingSong.youtubeVideoId);
@@ -98,16 +141,31 @@ const onPlayerReady = (event) => {
             updateVolumeDisplay();
         }
     }
+    updatePlayPauseButton(ytPlayer.getPlayerState?.() === 1);
 };
 
 const onPlayerStateChange = (event) => {
     if (event.data === 1) { // PLAYING
+        if (currentPlayingSong?.isPaused) {
+            ytPlayer.pauseVideo();
+            updatePlayPauseButton(false);
+            return;
+        }
         startSeekInterval();
+        updatePlayPauseButton(true);
         updateVolumeDisplay(); // Ensure volume from slider is applied
         const duration = ytPlayer.getDuration();
         if (duration > 0) durationDisplay.innerText = formatTime(duration);
+        const playingSong = currentQueue.find(q => q.id === currentPlayingId);
+        if (playingSong && !recordedPlayQueueIds.has(playingSong.id)) {
+            recordSongActivity(playingSong, 'played');
+            recordedPlayQueueIds.add(playingSong.id);
+        }
     } else {
         stopSeekInterval();
+        if (event.data === 2 || event.data === 0 || event.data === 5) {
+            updatePlayPauseButton(false);
+        }
     }
     
     if (event.data === 0) { // ENDED
@@ -119,6 +177,7 @@ const onPlayerStateChange = (event) => {
 };
 
 const adminOnlineCountDisplay = document.getElementById('adminOnlineCountDisplay');
+const adminOnlineUsersList = document.getElementById('adminOnlineUsersList');
 
 const handleLogin = () => {
     adminPassword = adminPasswordInput.value;
@@ -132,7 +191,7 @@ const handleLogin = () => {
     
     getSocket().on('FORCE_SKIP_CURRENT', (songId) => {
         if (currentPlayingId === songId) {
-            playerStatus.innerText = '⏭️ Voted to skip! Skipping...';
+            playerStatus.innerText = 'Skip vote passed. Moving to the next song...';
             handleSkipCurrent();
         }
     });
@@ -143,7 +202,17 @@ const handleLogin = () => {
 const updateAdminOnlineUsersUI = (users) => {
     currentOnlineUsers = users;
     if (adminOnlineCountDisplay) {
-        adminOnlineCountDisplay.innerText = `${users.length} (${users.join(', ')})`;
+        adminOnlineCountDisplay.innerText = users.length;
+        adminOnlineCountDisplay.title = users.length ? users.join(', ') : 'No listeners online';
+    }
+    if (adminOnlineUsersList) {
+        adminOnlineUsersList.replaceChildren();
+        users.forEach(userName => {
+            const chip = document.createElement('span');
+            chip.className = `online-user-chip${userName === 'Admin' ? ' is-current-user' : ''}`;
+            chip.textContent = userName === 'Admin' ? 'Admin (you)' : userName;
+            adminOnlineUsersList.append(chip);
+        });
     }
 };
 
@@ -160,15 +229,12 @@ const appendChatMessage = (msg, animate = true) => {
     // Highlight mention
     let displayText = msg.text.replace(new RegExp(`@Admin\\b`, 'gi'), `<span style="background: var(--primary); color: #121212; padding: 0 4px; border-radius: 4px; font-weight: bold;">$&</span>`);
     
-    let nowPlayingHtml = msg.nowPlaying ? `<div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 2px;">🎵 ${msg.nowPlaying}</div>` : '';
+    let nowPlayingHtml = msg.nowPlaying ? `<div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 2px;">Now playing: ${msg.nowPlaying}</div>` : '';
 
     const div = document.createElement('div');
+    div.className = `chat-message${isMe ? ' chat-message-me' : ''}${isMentioned && !isMe ? ' chat-message-mentioned' : ''}`;
     div.style.alignSelf = isMe ? 'flex-end' : 'flex-start';
     div.style.maxWidth = '85%';
-    div.style.background = isMe ? '#2a2a2a' : (isMentioned ? 'rgba(29, 185, 84, 0.2)' : 'var(--bg-color)');
-    div.style.padding = '8px 12px';
-    div.style.borderRadius = '12px';
-    if (isMentioned && !isMe) div.style.border = '1px solid var(--primary)';
     
     div.innerHTML = `
         <div style="font-size: 0.75rem; font-weight: bold; color: ${isMe ? 'var(--primary)' : 'var(--text-secondary)'}; margin-bottom: 2px;">
@@ -192,7 +258,7 @@ const appendChatMessage = (msg, animate = true) => {
 
     if (!isMe && chatPanel.classList.contains('hidden')) {
         unreadChats++;
-        chatToggleBtn.innerHTML = `💬 <span class="unread-badge">${unreadChats}</span>`;
+        chatToggleBtn.innerHTML = `${CHAT_ICON_MARKUP}<span class="unread-badge">${unreadChats}</span>`;
     }
 };
 
@@ -215,14 +281,22 @@ const updateAdminQueueUI = (queue) => {
     
     // Check if we need to start playing (if a song was forced to play by another admin or new session)
     const playingSong = queue.find(q => q.status === 'PLAYING');
-    if (playingSong && playingSong.id !== currentPlayingId) {
-        currentPlayingId = playingSong.id;
+    const isNewPlayingSong = Boolean(playingSong && playingSong.id !== currentPlayingId);
+    const wasPaused = currentPlayingSong?.isPaused;
+    currentPlayingId = playingSong?.id || null;
+    currentPlayingSong = playingSong || null;
+    renderAdminNowPlaying(playingSong);
+    if (isNewPlayingSong) {
         if (ytPlayer && ytPlayer.loadVideoById) {
             ytPlayer.unMute();
             ytPlayer.loadVideoById(playingSong.youtubeVideoId);
             playerStatus.innerText = `Playing: ${playingSong.title}`;
             updateVolumeDisplay();
         }
+    } else if (playingSong && ytPlayer?.getPlayerState) {
+        const playerState = ytPlayer.getPlayerState();
+        if (playingSong.isPaused && playerState === 1) ytPlayer.pauseVideo();
+        if (wasPaused && !playingSong.isPaused && playerState !== 1) ytPlayer.playVideo();
     }
 };
 
@@ -249,15 +323,15 @@ const renderAdminQueue = () => {
         if (q.status === 'WAITING') {
             controls = `
                 <div class="flex gap-2">
-                    <button onclick="adminForcePlaySong('${q.id}')" style="background: var(--primary); padding: 0.2rem 0.5rem; font-size: 0.8rem; border-radius: 4px; color: #121212;">Play Now</button>
-                    <button onclick="adminRemoveSong('${q.id}')" class="danger" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Remove</button>
+                    <button onclick="adminForcePlaySong('${q.id}')" class="button-with-icon">${ICONS.play}<span>Play now</span></button>
+                    <button onclick="adminRemoveSong('${q.id}')" class="danger icon-button compact" aria-label="Remove song" title="Remove song">${ICONS.trash}</button>
                 </div>
             `;
         }
 
         return `
             <div class="list-item ${q.status === 'PLAYING' ? 'playing' : ''}">
-                <img src="${q.thumbnailUrl || q.thumbnail}" alt="Thumbnail">
+                <img src="${q.thumbnailUrl || q.thumbnail}" alt="Thumbnail" loading="${q.status === 'PLAYING' ? 'eager' : 'lazy'}" decoding="async">
                 <div class="list-item-content">
                     <strong>${q.title}</strong>
                     <div class="text-sm mt-1 mb-2">${badge} Req: ${q.requestedBy}</div>
@@ -269,7 +343,7 @@ const renderAdminQueue = () => {
 
     const playingSong = currentQueue.find(q => q.status === 'PLAYING');
     if (playingSong) {
-        chatContextDisplay.innerText = `🎵 Now playing: ${playingSong.title}`;
+        chatContextDisplay.innerText = `Now playing: ${playingSong.title}`;
         chatContextDisplay.style.display = 'block';
     } else {
         chatContextDisplay.style.display = 'none';
@@ -281,10 +355,10 @@ const handleAuthError = (e) => {
         localStorage.removeItem('cafeAdminPassword');
         adminLoginSection.classList.remove('hidden');
         adminDashboard.classList.add('hidden');
-        playerStatus.innerText = '⚠️ Invalid Admin Password! Please login again.';
+        playerStatus.innerText = 'Invalid admin password. Please log in again.';
     } else {
         console.error('API Error:', e);
-        playerStatus.innerText = `⚠️ Action failed: ${e.response?.data?.error || e.message}. Retrying...`;
+        playerStatus.innerText = `Action failed: ${e.response?.data?.error || e.message}. Retrying...`;
         // If it's a network error during auto-play, retry after 3 seconds
         setTimeout(() => {
             if (currentPlayingId) handlePlayNext();
@@ -298,9 +372,13 @@ const handlePlayNext = async () => {
         if (res.data.message === 'QUEUE_EMPTY') {
             playerStatus.innerText = 'Queue is empty.';
             currentPlayingId = null;
+            currentPlayingSong = null;
             if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+            renderAdminNowPlaying(null);
         } else {
             currentPlayingId = res.data.id;
+            currentPlayingSong = res.data;
+            renderAdminNowPlaying(res.data);
             if (ytPlayer && ytPlayer.loadVideoById) {
                 ytPlayer.unMute();
                 ytPlayer.loadVideoById(res.data.youtubeVideoId);
@@ -310,6 +388,28 @@ const handlePlayNext = async () => {
         }
     } catch (e) {
         handleAuthError(e);
+    }
+};
+
+const handlePlayPause = async () => {
+    if (!ytPlayer || !currentPlayingId) return;
+    const playerState = ytPlayer.getPlayerState?.();
+    playPauseBtn.disabled = true;
+    try {
+        if (playerState === 1) {
+            await api.adminPausePlayback(currentPlayingId, adminPassword);
+            ytPlayer.pauseVideo();
+            playerStatus.innerText = 'Paused.';
+        } else {
+            await api.adminResumePlayback(currentPlayingId, adminPassword);
+            ytPlayer.playVideo();
+            const playingSong = currentQueue.find(q => q.id === currentPlayingId) || currentPlayingSong;
+            playerStatus.innerText = playingSong ? `Playing: ${playingSong.title}` : 'Playing.';
+        }
+    } catch (error) {
+        handleAuthError(error);
+    } finally {
+        updatePlayPauseButton(ytPlayer.getPlayerState?.() === 1);
     }
 };
 
@@ -337,7 +437,9 @@ const handleClearQueue = async () => {
             await api.adminClearQueue(adminPassword);
             if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
             currentPlayingId = null;
+            currentPlayingSong = null;
             playerStatus.innerText = 'Queue cleared.';
+            renderAdminNowPlaying(null);
         } catch (e) {
             handleAuthError(e);
         }
@@ -392,6 +494,7 @@ volSlider.addEventListener('input', (e) => {
 });
 
 adminLoginBtn.addEventListener('click', handleLogin);
+playPauseBtn.addEventListener('click', handlePlayPause);
 playNextBtn.addEventListener('click', handlePlayNext);
 skipCurrentBtn.addEventListener('click', handleSkipCurrent);
 clearQueueBtn.addEventListener('click', handleClearQueue);
@@ -439,15 +542,22 @@ chatInput.addEventListener('input', (e) => {
 });
 
 chatToggleBtn.addEventListener('click', () => {
-    chatPanel.classList.remove('hidden');
-    unreadChats = 0;
-    chatToggleBtn.innerHTML = '💬';
-    chatInput.focus();
-    scrollToBottom();
+    const shouldOpen = chatPanel.classList.contains('hidden');
+    chatPanel.classList.toggle('hidden', !shouldOpen);
+    chatToggleBtn.setAttribute('aria-expanded', String(shouldOpen));
+    chatToggleBtn.setAttribute('aria-label', shouldOpen ? 'Close live chat' : 'Open live chat');
+    if (shouldOpen) {
+        unreadChats = 0;
+        chatToggleBtn.innerHTML = CHAT_ICON_MARKUP;
+        chatInput.focus();
+        scrollToBottom();
+    }
 });
 
 closeChatBtn.addEventListener('click', () => {
     chatPanel.classList.add('hidden');
+    chatToggleBtn.setAttribute('aria-expanded', 'false');
+    chatToggleBtn.setAttribute('aria-label', 'Open live chat');
 });
 
 sendChatBtn.addEventListener('click', handleSendChat);

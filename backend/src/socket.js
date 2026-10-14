@@ -13,6 +13,74 @@ const MAX_CHAT_HISTORY = 50;
 
 let skipVotes = new Set();
 let currentVoteSongId = null;
+let skipTriggeredSongId = null;
+
+const addChatMessage = (message) => {
+    chatHistory.push(message);
+    if (chatHistory.length > MAX_CHAT_HISTORY) chatHistory.shift();
+    io.emit('NEW_CHAT_MESSAGE', message);
+};
+
+const getSkipVoteProgress = (songId) => {
+    const total = getUniqueOnlineUsers().filter(user => user !== 'Admin').length || 1;
+    const votes = skipVotes.size;
+    return { songId, votes, total, percentage: Math.min(100, Math.round((votes / total) * 100)) };
+};
+
+const handleSkipVote = (socket, requestedSongId, respond = () => {}) => {
+    const userName = onlineUsers.get(socket.id);
+    const playingSong = queueService.getQueue().find(item => item.status === 'PLAYING');
+
+    if (!userName || userName === 'Admin') {
+        return respond({ ok: false, error: 'USER_NOT_ELIGIBLE' });
+    }
+    if (!playingSong || (requestedSongId && requestedSongId !== playingSong.id)) {
+        return respond({ ok: false, error: 'SONG_NOT_PLAYING' });
+    }
+    if (skipTriggeredSongId === playingSong.id) {
+        return respond({ ok: true, passed: true, ...getSkipVoteProgress(playingSong.id) });
+    }
+
+    if (currentVoteSongId !== playingSong.id) {
+        skipVotes.clear();
+        currentVoteSongId = playingSong.id;
+        skipTriggeredSongId = null;
+        addChatMessage({
+            id: Date.now().toString(),
+            user: 'System',
+            text: `<b>${userName}</b> เริ่มโหวตข้ามเพลง กดปุ่ม <b>Vote to skip</b> เพื่อร่วมโหวต`,
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    const alreadyVoted = skipVotes.has(userName);
+    if (!alreadyVoted) skipVotes.add(userName);
+
+    const progress = getSkipVoteProgress(playingSong.id);
+    if (!alreadyVoted) {
+        addChatMessage({
+            id: (Date.now() + 1).toString(),
+            user: 'System',
+            text: `โหวตข้ามเพลง: ${progress.votes}/${progress.total} (${progress.percentage}%)`,
+            timestamp: new Date().toISOString()
+        });
+        io.emit('SKIP_VOTE_UPDATE', progress);
+    }
+
+    const passed = progress.votes / progress.total >= 0.6;
+    if (passed && skipTriggeredSongId !== playingSong.id) {
+        skipTriggeredSongId = playingSong.id;
+        io.emit('FORCE_SKIP_CURRENT', playingSong.id);
+        addChatMessage({
+            id: (Date.now() + 2).toString(),
+            user: 'System',
+            text: 'โหวตสำเร็จ กำลังข้ามเพลง...',
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    return respond({ ok: true, alreadyVoted, passed, ...progress });
+};
 
 export const initSocket = (server) => {
     io = new Server(server, {
@@ -32,6 +100,9 @@ export const initSocket = (server) => {
             if (userName) {
                 onlineUsers.set(socket.id, userName);
                 io.emit('ONLINE_USERS', getUniqueOnlineUsers());
+                if (currentVoteSongId && skipVotes.size > 0) {
+                    io.emit('SKIP_VOTE_UPDATE', getSkipVoteProgress(currentVoteSongId));
+                }
             }
         });
 
@@ -40,60 +111,8 @@ export const initSocket = (server) => {
             const text = data.text.trim();
             
             if (text.toLowerCase() === '/skip') {
-                const queue = queueService.getQueue();
-                const playingSong = queue.find(q => q.status === 'PLAYING');
-                
-                if (playingSong) {
-                    if (currentVoteSongId !== playingSong.id) {
-                        skipVotes.clear();
-                        currentVoteSongId = playingSong.id;
-                        
-                        const msg = {
-                            id: Date.now().toString(),
-                            user: 'System',
-                            text: `🗳️ <b>${userName}</b> เปิดโหวตข้ามเพลง! พิมพ์ <b>/skip</b> เพื่อโหวต`,
-                            timestamp: new Date().toISOString()
-                        };
-                        chatHistory.push(msg);
-                        io.emit('NEW_CHAT_MESSAGE', msg);
-                    }
-                    
-                    if (userName !== 'Admin' && !skipVotes.has(userName)) {
-                        skipVotes.add(userName);
-                    } else if (userName === 'Admin') {
-                        // Admin can auto skip or we just let admin vote count?
-                        // Let admin vote normally but we exclude them from total. If they vote, it's just +1.
-                        if (!skipVotes.has(userName)) skipVotes.add(userName);
-                    }
-                    
-                    const uniqueUsers = getUniqueOnlineUsers();
-                    const total = uniqueUsers.filter(u => u !== 'Admin').length || 1; 
-                    const votes = skipVotes.size;
-                    
-                    const progressMsg = {
-                        id: (Date.now() + 1).toString(),
-                        user: 'System',
-                        text: `📊 โหวตข้ามเพลง: ${votes}/${total} (${Math.round((votes/total)*100)}%)`,
-                        timestamp: new Date().toISOString()
-                    };
-                    chatHistory.push(progressMsg);
-                    if (chatHistory.length > MAX_CHAT_HISTORY) chatHistory.shift();
-                    io.emit('NEW_CHAT_MESSAGE', progressMsg);
-                    
-                    if (votes / total >= 0.6) {
-                        io.emit('FORCE_SKIP_CURRENT', playingSong.id);
-                        const passedMsg = {
-                            id: (Date.now() + 2).toString(),
-                            user: 'System',
-                            text: `⏭️ โหวตสำเร็จ! กำลังข้ามเพลง...`,
-                            timestamp: new Date().toISOString()
-                        };
-                        chatHistory.push(passedMsg);
-                        io.emit('NEW_CHAT_MESSAGE', passedMsg);
-                        skipVotes.clear();
-                    }
-                }
-                return; // Do not broadcast the '/skip' command as a normal chat
+                handleSkipVote(socket, null);
+                return;
             }
 
             const chatMsg = {
@@ -112,9 +131,16 @@ export const initSocket = (server) => {
             io.emit('NEW_CHAT_MESSAGE', chatMsg);
         });
 
+        socket.on('VOTE_SKIP', (data = {}, respond) => {
+            handleSkipVote(socket, data.songId, typeof respond === 'function' ? respond : undefined);
+        });
+
         socket.on('disconnect', () => {
             onlineUsers.delete(socket.id);
             io.emit('ONLINE_USERS', getUniqueOnlineUsers());
+            if (currentVoteSongId && skipVotes.size > 0) {
+                io.emit('SKIP_VOTE_UPDATE', getSkipVoteProgress(currentVoteSongId));
+            }
         });
     });
 

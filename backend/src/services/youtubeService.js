@@ -4,6 +4,44 @@ import { config } from '../config/env.js';
 const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3';
 
 let currentKeyIndex = 0;
+const searchCache = new Map();
+const videoCache = new Map();
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const VIDEO_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 200;
+
+const setCacheValue = (cache, key, value, ttlMs) => {
+    cache.delete(key);
+    cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+    while (cache.size > MAX_CACHE_ENTRIES) {
+        cache.delete(cache.keys().next().value);
+    }
+};
+
+const loadWithCache = (cache, key, ttlMs, loader) => {
+    const now = Date.now();
+    const cached = cache.get(key);
+    if (cached && cached.expiresAt > now) {
+        return cached.promise || Promise.resolve(cached.value);
+    }
+    if (cached) cache.delete(key);
+
+    const promise = loader()
+        .then(value => {
+            setCacheValue(cache, key, value, ttlMs);
+            return value;
+        })
+        .catch(error => {
+            cache.delete(key);
+            throw error;
+        });
+
+    cache.set(key, { promise, expiresAt: now + ttlMs });
+    if (cache.size > MAX_CACHE_ENTRIES) {
+        cache.delete(cache.keys().next().value);
+    }
+    return promise;
+};
 
 const getApiKey = () => {
     if (config.youtubeApiKeys.length === 0) throw new Error('No YouTube API keys configured');
@@ -52,40 +90,50 @@ const parseDuration = (duration) => {
 };
 
 export const searchYouTube = async (query) => {
-    try {
+    const cacheKey = query.trim().toLocaleLowerCase();
+    return loadWithCache(searchCache, cacheKey, SEARCH_CACHE_TTL_MS, async () => {
+      try {
         const response = await makeYouTubeRequest('/search', {
             part: 'snippet',
             q: query,
             type: 'video',
-            maxResults: 10
+            maxResults: 10,
+            fields: 'items/id/videoId'
         });
 
         const videoIds = response.data.items.map(item => item.id.videoId).join(',');
+        if (!videoIds) return [];
         
         // Fetch details to get duration
         const detailsResponse = await makeYouTubeRequest('/videos', {
             part: 'contentDetails,snippet',
-            id: videoIds
+            id: videoIds,
+            fields: 'items(id,snippet(title,channelTitle,thumbnails),contentDetails/duration)'
         });
 
-        return detailsResponse.data.items.map(item => ({
+        const results = detailsResponse.data.items.map(item => ({
             videoId: item.id,
             title: item.snippet.title,
-            thumbnailUrl: item.snippet.thumbnails.high.url,
+            thumbnailUrl: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
             channelName: item.snippet.channelTitle,
             duration: parseDuration(item.contentDetails.duration)
         }));
-    } catch (error) {
+        results.forEach(song => setCacheValue(videoCache, song.videoId, song, VIDEO_CACHE_TTL_MS));
+        return results;
+      } catch (error) {
         console.error('YouTube Search Error:', error?.response?.data || error.message);
         throw new Error('Failed to search YouTube');
-    }
+      }
+    });
 };
 
 export const getVideoDetails = async (videoId) => {
-    try {
+    return loadWithCache(videoCache, videoId, VIDEO_CACHE_TTL_MS, async () => {
+      try {
         const response = await makeYouTubeRequest('/videos', {
             part: 'snippet,contentDetails',
-            id: videoId
+            id: videoId,
+            fields: 'items(id,snippet(title,channelTitle,thumbnails),contentDetails/duration)'
         });
 
         if (response.data.items.length === 0) {
@@ -96,14 +144,15 @@ export const getVideoDetails = async (videoId) => {
         return {
             videoId: item.id,
             title: item.snippet.title,
-            thumbnailUrl: item.snippet.thumbnails.high.url,
+            thumbnailUrl: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
             channelName: item.snippet.channelTitle,
             duration: parseDuration(item.contentDetails.duration)
         };
-    } catch (error) {
+      } catch (error) {
         console.error('YouTube Video Error:', error?.response?.data || error.message);
         throw new Error('Failed to get video details');
-    }
+      }
+    });
 };
 
 export const extractVideoIdFromUrl = (url) => {

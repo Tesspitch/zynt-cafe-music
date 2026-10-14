@@ -43,7 +43,10 @@ export const addSongToQueue = (song, userName) => {
         status: QUEUE_STATUS.WAITING,
         requestedAt: new Date().toISOString(),
         startedAt: null,
-        finishedAt: null
+        finishedAt: null,
+        isPaused: false,
+        pausedAt: null,
+        totalPausedMs: 0
     };
     
     queue.push(newItem);
@@ -56,10 +59,35 @@ export const changeStatus = (id, newStatus) => {
         item.status = newStatus;
         if (newStatus === QUEUE_STATUS.PLAYING) {
             item.startedAt = new Date().toISOString();
+            item.isPaused = false;
+            item.pausedAt = null;
+            item.totalPausedMs = 0;
         } else if (newStatus === QUEUE_STATUS.PLAYED || newStatus === QUEUE_STATUS.SKIPPED) {
             item.finishedAt = new Date().toISOString();
+            item.isPaused = false;
+            item.pausedAt = null;
         }
     }
+    return item;
+};
+
+export const pausePlayback = (id) => {
+    const item = queue.find(q => q.id === id && q.status === QUEUE_STATUS.PLAYING);
+    if (!item || item.isPaused) return item;
+    item.isPaused = true;
+    item.pausedAt = new Date().toISOString();
+    return item;
+};
+
+export const resumePlayback = (id) => {
+    const item = queue.find(q => q.id === id && q.status === QUEUE_STATUS.PLAYING);
+    if (!item || !item.isPaused) return item;
+    const pausedAtMs = new Date(item.pausedAt).getTime();
+    if (Number.isFinite(pausedAtMs)) {
+        item.totalPausedMs = (item.totalPausedMs || 0) + Math.max(0, Date.now() - pausedAtMs);
+    }
+    item.isPaused = false;
+    item.pausedAt = null;
     return item;
 };
 

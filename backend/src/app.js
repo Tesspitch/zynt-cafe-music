@@ -15,6 +15,7 @@ import { adminMiddleware } from './middlewares/adminMiddleware.js';
 
 const app = express();
 const server = http.createServer(app);
+app.disable('x-powered-by');
 
 // Init Socket.io
 initSocket(server);
@@ -24,7 +25,7 @@ app.use(cors({
     origin: true,
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '32kb' }));
 app.use(session({
     secret: config.sessionSecret,
     resave: false,
@@ -53,6 +54,8 @@ app.delete('/api/queue/:id', authMiddleware, queueController.deleteQueue);
 app.post('/api/admin/queue/play-next', adminMiddleware, adminController.playNext);
 app.post('/api/admin/queue/:id/skip', adminMiddleware, adminController.skipSong);
 app.post('/api/admin/queue/:id/play', adminMiddleware, adminController.forcePlay);
+app.post('/api/admin/player/pause', adminMiddleware, adminController.pausePlayback);
+app.post('/api/admin/player/resume', adminMiddleware, adminController.resumePlayback);
 app.delete('/api/admin/queue/:id', adminMiddleware, adminController.removeSong);
 app.delete('/api/admin/queue', adminMiddleware, adminController.clearQueue);
 
@@ -64,7 +67,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, '../../frontend/dist');
 
-app.use(express.static(distPath));
+app.use('/assets', express.static(path.join(distPath, 'assets'), {
+    etag: true,
+    immutable: true,
+    maxAge: '1y'
+}));
+app.use(express.static(distPath, {
+    etag: true,
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
+}));
 
 // Fallback to index.html for SPA (if we had routing) or just root
 app.use((req, res, next) => {

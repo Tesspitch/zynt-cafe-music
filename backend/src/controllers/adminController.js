@@ -82,3 +82,20 @@ export const forcePlay = (req, res) => {
     
     res.json(updatedSong);
 };
+
+const updatePlaybackPauseState = (req, res, shouldPause) => {
+    const { id } = req.body;
+    const item = shouldPause
+        ? queueService.pausePlayback(id)
+        : queueService.resumePlayback(id);
+
+    if (!item) {
+        return res.status(404).json({ error: 'PLAYING_SONG_NOT_FOUND' });
+    }
+
+    getIo()?.emit('QUEUE_UPDATE', queueService.getQueue());
+    return res.json(item);
+};
+
+export const pausePlayback = (req, res) => updatePlaybackPauseState(req, res, true);
+export const resumePlayback = (req, res) => updatePlaybackPauseState(req, res, false);

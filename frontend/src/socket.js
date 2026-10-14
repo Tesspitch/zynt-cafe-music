@@ -6,7 +6,7 @@ const API_URL = import.meta.env.PROD
 
 let socket = null;
 
-export const initSocket = (onQueueUpdate, onOnlineUsersUpdate, onChatHistory, onNewChatMessage, userName = null) => {
+export const initSocket = (onQueueUpdate, onOnlineUsersUpdate, onChatHistory, onNewChatMessage, userName = null, onSkipVoteUpdate = null) => {
     if (!socket) {
         socket = io(API_URL, {
             withCredentials: true
@@ -26,6 +26,10 @@ export const initSocket = (onQueueUpdate, onOnlineUsersUpdate, onChatHistory, on
 
         socket.on('NEW_CHAT_MESSAGE', (msg) => {
             if (onNewChatMessage) onNewChatMessage(msg);
+        });
+
+        socket.on('SKIP_VOTE_UPDATE', (progress) => {
+            if (onSkipVoteUpdate) onSkipVoteUpdate(progress);
         });
 
         socket.on('SONG_ADDED', (song) => console.log('Song added:', song));
@@ -50,4 +54,12 @@ export const sendChatMessage = (text, nowPlaying) => {
     if (socket) {
         socket.emit('SEND_CHAT', { text, nowPlaying });
     }
+};
+
+export const voteToSkip = (songId, callback) => {
+    if (!socket) {
+        callback?.({ ok: false, error: 'SOCKET_NOT_CONNECTED' });
+        return;
+    }
+    socket.emit('VOTE_SKIP', { songId }, callback);
 };

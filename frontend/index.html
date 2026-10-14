@@ -3,102 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intern Zyntelligent Cafe Music Queue</title>
+    <meta name="theme-color" content="#111311">
+    <title>Zyntelligent Cafe Music</title>
     <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
-    <div class="container">
-        <h1>☕ Intern Zyntelligent Cafe Music Queue</h1>
-        
-        <!-- Login Section -->
-        <div id="loginSection" class="card" style="text-align: center; max-width: 400px; margin: 4rem auto;">
-            <h2 style="border: none;">Welcome to the Cafe!</h2>
-            <p class="text-sm mb-2">Enter your name to request a song.</p>
-            <input type="text" id="nameInput" placeholder="Your Name" style="margin-bottom: 1rem;">
-            <button id="loginBtn" style="width: 100%;">Join Queue</button>
-            <p id="loginError" class="text-sm mt-2" style="color: var(--danger);"></p>
-        </div>
+<body class="user-page">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="container app-shell">
+        <header class="app-header">
+            <a class="brand" href="/" aria-label="Cafe Music home">
+                <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span><small>ZYNTELLIGENT</small><strong>Cafe Music</strong></span>
+            </a>
+            <div class="header-actions"><span class="header-caption">Shared listening room</span><button id="themeToggleBtn" class="theme-toggle icon-button" type="button" aria-label="Switch color theme"></button></div>
+        </header>
 
-        <!-- Main App Section -->
-        <div id="mainSection" class="hidden">
-            <div class="card flex justify-between items-center">
-                <div>
-                    Welcome, <strong id="userNameDisplay"></strong>!
+        <main>
+            <section id="loginSection" class="login-layout">
+                <div class="login-copy">
+                    <span class="eyebrow">MUSIC FOR THE ROOM</span>
+                    <h1>Set the mood.<br><em>Share the queue.</em></h1>
+                    <p>Choose a name, discover something good, and add your track to the café playlist.</p>
+                    <div class="sound-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
                 </div>
-                <button id="logoutBtn" class="danger">Logout</button>
-            </div>
-
-            <!-- Now Playing -->
-            <div class="card">
-                <h2>Now Playing</h2>
-                <div id="nowPlayingContainer">
-                    <p class="text-sm">Nothing is playing right now.</p>
+                <div class="card login-card">
+                    <span class="step-number">01</span>
+                    <p class="eyebrow">ENTER THE ROOM</p>
+                    <h2>What should we call you?</h2>
+                    <p class="text-sm mb-2">No account needed. Your name is only used for song requests.</p>
+                    <label class="field-label" for="nameInput">Display name</label>
+                    <input type="text" id="nameInput" placeholder="Type your name" autocomplete="name">
+                    <button id="loginBtn" class="button-block button-with-icon mt-2"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8l4 4-4 4M18 12H7"/><path d="M10 5H5v14h5"/></svg><span>Join the queue</span></button>
+                    <p id="loginError" class="form-message"></p>
                 </div>
-            </div>
+            </section>
 
-            <!-- Request Limits & Online Users -->
-            <div class="card flex justify-between items-center">
-                <h3>My Active Requests: <span id="requestLimitDisplay">0 / 10</span></h3>
-                <div class="text-sm">🟢 Online: <span id="onlineCountDisplay">0</span></div>
-            </div>
+            <div id="mainSection" class="hidden dashboard-stack">
+                <section class="topbar card compact-card">
+                    <div><span class="eyebrow">LISTENING AS</span><div class="welcome-name" id="userNameDisplay"></div></div>
+                    <button id="logoutBtn" class="button-ghost button-with-icon"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/></svg><span>Leave room</span></button>
+                </section>
 
-            <!-- Add Song Section -->
-            <div class="card">
-                <h2>Add Song to Queue</h2>
-                
-                <div class="mb-2">
-                    <label><strong>Option 1: Paste YouTube URL</strong></label>
-                    <div class="flex gap-2 mt-2">
-                        <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=...">
-                        <button id="addUrlBtn">Add</button>
+                <section class="card feature-card">
+                    <div class="section-heading">
+                        <div><span class="eyebrow">LIVE</span><h2>Now playing</h2></div>
+                        <span class="live-indicator"><i></i>On air</span>
                     </div>
-                </div>
+                    <div id="nowPlayingContainer" class="now-playing-slot"><p class="empty-state">Nothing is playing right now.</p></div>
+                </section>
 
-                <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #e5e7eb;">
+                <section class="stat-grid">
+                    <div class="card stat-card"><span class="stat-label">Your active requests</span><strong id="requestLimitDisplay">0 / 10</strong><span class="text-sm">Songs waiting or playing</span></div>
+                    <div class="card stat-card online-stat-card"><span class="stat-label">Listeners online</span><strong id="onlineCountDisplay">0</strong><span class="text-sm"><i class="status-dot"></i>Connected now</span><div id="onlineUsersList" class="online-user-list" aria-live="polite"><span class="online-user-empty">No one online yet</span></div></div>
+                </section>
 
-                <div>
-                    <label><strong>Option 2: Search YouTube</strong></label>
-                    <div class="flex gap-2 mt-2">
-                        <input type="text" id="searchInput" placeholder="Search song...">
-                        <button id="searchBtn">Search</button>
+                <section class="card request-card">
+                    <div class="section-heading">
+                        <div><span class="eyebrow">DISCOVER</span><h2>Add a song</h2></div><span class="section-index">02</span>
                     </div>
-                    <div id="searchResults" class="mt-2"></div>
-                </div>
-                
-                <p id="addError" class="text-sm mt-2" style="color: red;"></p>
-            </div>
+                    <div class="request-grid">
+                        <div class="request-option"><span class="option-number">A</span><div class="option-content"><label class="field-label" for="urlInput">Paste a YouTube link</label><div class="input-action"><input type="text" id="urlInput" placeholder="youtube.com/watch?v=..."><button id="addUrlBtn" class="icon-button" type="button" aria-label="Add song from link" title="Add song from link"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/><path d="M12 5v14M5 12h14"/></svg></button></div></div></div>
+                        <div class="request-divider"><span>OR</span></div>
+                        <div class="request-option"><span class="option-number">B</span><div class="option-content"><label class="field-label" for="searchInput">Search YouTube</label><div class="input-action"><input type="text" id="searchInput" placeholder="Song, artist or mood"><button id="searchBtn" class="icon-button" type="button" aria-label="Search YouTube" title="Search YouTube"><svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button></div></div></div>
+                    </div>
+                    <p id="addError" class="form-message"></p>
+                    <div id="searchResults" class="search-results"></div>
+                </section>
 
-            <!-- Queue Section -->
-            <div class="card">
-                <h2>Queue</h2>
-                <div id="queueList"></div>
+                <section class="card queue-card">
+                    <div class="section-heading"><div><span class="eyebrow">UP NEXT</span><h2>Shared queue</h2></div><span class="section-index">03</span></div>
+                    <div id="queueList"></div>
+                </section>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Chat Widget -->
     <div id="chatWidget" class="hidden">
-        <button id="chatToggleBtn">💬</button>
-        
+        <button id="chatToggleBtn" aria-label="Open live chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5 3 21v-5.2A8 8 0 0 1 2 12C2 7.6 6.5 4 12 4s10 3.6 10 8-4.5 8-10 8c-1.6 0-3.1-.3-4.5-.8Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></button>
         <div id="chatPanel" class="card hidden">
-            <div class="chat-header">
-                <span>Live Chat 💬</span>
-                <button id="closeChatBtn">✖</button>
-            </div>
-            <div id="chatMessages">
-                <!-- Messages -->
-            </div>
+            <div class="chat-header"><div><span class="chat-presence"></span><span>Live chat</span></div><button id="closeChatBtn" aria-label="Close chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+            <div id="chatMessages"></div>
             <div class="chat-input-area">
-                <div id="mentionDropdown" class="hidden"></div>
-                <div id="chatContextDisplay" style="font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none;"></div>
-                <div class="flex gap-2">
-                    <input type="text" id="chatInput" placeholder="Type a message... (@ to mention)" style="flex: 1;">
-                    <button id="sendChatBtn">➤</button>
-                </div>
+                <div id="mentionDropdown" class="hidden"></div><div id="chatContextDisplay" class="chat-context"></div>
+                <div class="input-action chat-action"><input type="text" id="chatInput" placeholder="Write a message... (@ to mention)"><button id="sendChatBtn" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Z"/><path d="M7 12h14"/></svg></button></div>
             </div>
         </div>
     </div>
-
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>
